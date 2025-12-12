@@ -16,11 +16,33 @@ class ColorPalette:
 
 class RequestIdFilter(logging.Filter):
     build_in_fields = [
-        "args", "asctime", "created", "exc_text", "exc_info", "filename",
-        "funcName", "levelname", "levelno", "lineno", "message", "module",
-        "msecs", "msg", "name", "pathname", "process", "process-Name", "processName",
-        "relativeCreated", "stack_info", "thread", "thread-Name", "threadName", "taskName"
+        "args",
+        "asctime",
+        "created",
+        "exc_text",
+        "exc_info",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "message",
+        "module",
+        "msecs",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "process-Name",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "thread",
+        "thread-Name",
+        "threadName",
+        "taskName",
     ]
+
     def filter(self, record: logging.LogRecord) -> bool:
         fields = dict()
         for k, v in record.__dict__.items():
@@ -56,7 +78,7 @@ class CustomFormatter(logging.Formatter):
         formatted = (
             f"{ColorPalette.dark_gray}{self.formatTime(record)}{ColorPalette.reset} - "
             f"{level_color}{padded_levelname}{ColorPalette.reset} - "
-            f"\"{ColorPalette.gray}{record.getMessage()}{ColorPalette.reset}\" "
+            f'"{ColorPalette.gray}{record.getMessage()}{ColorPalette.reset}" '
             f"{self.extra(record.fields)}"
             f"({ColorPalette.gray}{record.name}{ColorPalette.reset}) "
             f"{ColorPalette.yellow}({record.filename}:{record.lineno}){ColorPalette.reset}"

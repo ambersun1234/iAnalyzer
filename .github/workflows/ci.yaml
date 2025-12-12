@@ -1,0 +1,21 @@
+name: Style Check
+
+on:
+  push:
+
+jobs:
+  style-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Style Check
+        uses: psf/black@stable
+        with:
+          options: "--check --verbose --diff --color"

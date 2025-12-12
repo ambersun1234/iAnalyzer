@@ -1,4 +1,5 @@
 from playwright.sync_api import BrowserContext
+
 from src.logger.logger import logger
 
 
@@ -21,12 +22,12 @@ class ImageChecker:
         try:
             page = self.context.new_page()
             try:
-                response = page.goto(
-                    page_url, wait_until='load', timeout=90000)
+                response = page.goto(page_url, wait_until="load", timeout=90000)
             except Exception:
                 try:
                     response = page.goto(
-                        page_url, wait_until='domcontentloaded', timeout=60000)
+                        page_url, wait_until="domcontentloaded", timeout=60000
+                    )
                 except Exception:
                     logger.debug(f"Timeout loading {page_url}, skipping")
                     if page:
@@ -40,7 +41,7 @@ class ImageChecker:
 
             page.wait_for_timeout(2000)
 
-            images = page.query_selector_all('img')
+            images = page.query_selector_all("img")
             for img in images:
                 logger.debug(f"Checking image: {img.get_attribute('src')}")
                 self._check_image(img, page_url)
@@ -49,14 +50,18 @@ class ImageChecker:
                 page.close()
 
         except Exception as e:
-            logger.error(f"Error checking page", extra={"page_url": page_url, "error": e})
+            logger.error(
+                f"Error checking page", extra={"page_url": page_url, "error": e}
+            )
             page.close() if page else None
 
     def _check_image(self, img_element, page_url: str):
         try:
-            img_url = img_element.evaluate('''(img) => {
+            img_url = img_element.evaluate(
+                """(img) => {
                 return img.currentSrc || img.src || '';
-            }''')
+            }"""
+            )
 
             if not img_url:
                 return
@@ -66,24 +71,43 @@ class ImageChecker:
                 self._log_invalid(img_url, page_url, "No bounding box")
                 return
 
-            width = box.get('width', 0) or 0
-            height = box.get('height', 0) or 0
+            width = box.get("width", 0) or 0
+            height = box.get("height", 0) or 0
 
-            natural_size = img_element.evaluate('''(img) => {
+            natural_size = img_element.evaluate(
+                """(img) => {
                 return {
                     naturalWidth: img.naturalWidth,
                     naturalHeight: img.naturalHeight,
                     complete: img.complete
                 };
-            }''')
+            }"""
+            )
 
-            natural_width = natural_size.get('naturalWidth', 0) or 0
-            natural_height = natural_size.get('naturalHeight', 0) or 0
+            natural_width = natural_size.get("naturalWidth", 0) or 0
+            natural_height = natural_size.get("naturalHeight", 0) or 0
 
             if width == 0 and height == 0:
-                logger.error(f"Rendered size is 0x0", extra={"page_url": page_url, "img_url": img_url, "reason": "Rendered size is 0x0"})
+                logger.error(
+                    f"Rendered size is 0x0",
+                    extra={
+                        "page_url": page_url,
+                        "img_url": img_url,
+                        "reason": "Rendered size is 0x0",
+                    },
+                )
             elif natural_width == 0 and natural_height == 0:
-                logger.error(f"Image failed to load (natural size 0x0)", extra={"page_url": page_url, "img_url": img_url, "reason": "Image failed to load (natural size 0x0)"})
+                logger.error(
+                    f"Image failed to load (natural size 0x0)",
+                    extra={
+                        "page_url": page_url,
+                        "img_url": img_url,
+                        "reason": "Image failed to load (natural size 0x0)",
+                    },
+                )
 
         except Exception as e:
-            logger.debug(f"Error checking image", extra={"page_url": page_url, "img_url": img_url, "error": e})
+            logger.debug(
+                f"Error checking image",
+                extra={"page_url": page_url, "img_url": img_url, "error": e},
+            )
