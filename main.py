@@ -21,7 +21,14 @@ def main():
     args = parser.parse_args()
 
     analyzer = ImageAnalyzer(args.domain, ignore_prefixes=args.ignore_prefix)
-    analyzer.analyze()
+    fail_count = analyzer.analyze()
+
+    if fail_count > 0:
+        logger.error(f"Found {fail_count} pages with invalid images")
+        sys.exit(1)
+    else:
+        logger.info(f"All images are valid")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

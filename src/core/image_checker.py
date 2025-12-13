@@ -14,12 +14,13 @@ class ImageChecker:
                 return True
         return False
 
-    def check_page(self, page_url: str):
-        if self._should_ignore(page_url):
-            logger.debug(f"Skipping ignored page: {page_url}")
-            return
-        page = None
+    def check_page(self, page_url: str) -> bool:
+        fail = False
         try:
+            if self._should_ignore(page_url):
+                logger.debug(f"Skipping ignored page: {page_url}")
+                return
+
             page = self.context.new_page()
             try:
                 response = page.goto(page_url, wait_until="load", timeout=90000)
@@ -30,13 +31,9 @@ class ImageChecker:
                     )
                 except Exception:
                     logger.debug(f"Timeout loading {page_url}, skipping")
-                    if page:
-                        page.close()
-                    return
+                    raise
 
             if not response or response.status != 200:
-                if page:
-                    page.close()
                 return
 
             page.wait_for_timeout(2000)
@@ -45,15 +42,15 @@ class ImageChecker:
             for img in images:
                 logger.debug(f"Checking image: {img.get_attribute('src')}")
                 self._check_image(img, page_url)
-
-            if page:
-                page.close()
-
         except Exception as e:
+            fail = True
             logger.error(
                 f"Error checking page", extra={"page_url": page_url, "error": e}
             )
+        finally:
             page.close() if page else None
+
+        return fail
 
     def _check_image(self, img_element, page_url: str):
         try:
@@ -71,8 +68,8 @@ class ImageChecker:
                 self._log_invalid(img_url, page_url, "No bounding box")
                 return
 
-            width = box.get("width", 0) or 0
-            height = box.get("height", 0) or 0
+            width = box.get("width", 0)
+            height = box.get("height", 0)
 
             natural_size = img_element.evaluate(
                 """(img) => {
@@ -84,8 +81,8 @@ class ImageChecker:
             }"""
             )
 
-            natural_width = natural_size.get("naturalWidth", 0) or 0
-            natural_height = natural_size.get("naturalHeight", 0) or 0
+            natural_width = natural_size.get("naturalWidth", 0)
+            natural_height = natural_size.get("naturalHeight", 0)
 
             if width == 0 and height == 0:
                 logger.error(
@@ -96,6 +93,8 @@ class ImageChecker:
                         "reason": "Rendered size is 0x0",
                     },
                 )
+                raise Exception("Rendered size is 0x0")
+
             elif natural_width == 0 and natural_height == 0:
                 logger.error(
                     f"Image failed to load (natural size 0x0)",
@@ -105,9 +104,11 @@ class ImageChecker:
                         "reason": "Image failed to load (natural size 0x0)",
                     },
                 )
+                raise Exception("Image failed to load (natural size 0x0)")
 
         except Exception as e:
             logger.debug(
                 f"Error checking image",
                 extra={"page_url": page_url, "img_url": img_url, "error": e},
             )
+            raise e
