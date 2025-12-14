@@ -40,7 +40,9 @@ class ImageChecker:
 
             images = page.query_selector_all("img")
             for img in images:
-                logger.debug(f"Checking image: {img.get_attribute('src')}")
+                logger.debug(
+                    f"Checking image", extra={"img_url": img.get_attribute("src")}
+                )
                 self._check_image(img, page_url)
         except Exception as e:
             fail = True
