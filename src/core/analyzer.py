@@ -42,15 +42,15 @@ class ImageAnalyzer:
                 checker = ImageChecker(context, ignore_prefixes=self.ignore_prefixes)
                 for index, page_url in enumerate(pages):
                     logger.info(
-                        f"Checking page",
+                        f"Checking page...",
                         extra={
                             "page_url": page_url,
-                            "index": index,
+                            "index": index + 1,
                             "total": len(pages),
                         },
                     )
                     if self._should_ignore(page_url):
-                        logger.debug(
+                        logger.warning(
                             f"Skipping ignored page", extra={"page_url": page_url}
                         )
                         continue

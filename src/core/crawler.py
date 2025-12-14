@@ -38,7 +38,7 @@ class Crawler:
             if url in self.visited:
                 continue
             if self._should_ignore(url):
-                logger.debug(f"Skipping ignored URL: {url}")
+                logger.warning(f"Skipping ignored URL: {url}")
                 continue
 
             try:
@@ -46,14 +46,8 @@ class Crawler:
                 try:
                     response = page.goto(url, wait_until="load", timeout=90000)
                 except Exception:
-                    try:
-                        response = page.goto(
-                            url, wait_until="domcontentloaded", timeout=60000
-                        )
-                    except Exception:
-                        logger.debug(f"Timeout loading {url}, skipping")
-                        page.close()
-                        continue
+                    logger.warning(f"Timeout loading {url}, skipping")
+                    continue
 
                 if response and response.status == 200:
                     final_url = page.url
@@ -70,14 +64,10 @@ class Crawler:
                             ):
                                 self.to_visit.append(link)
 
-                page.close()
-
             except Exception as e:
                 logger.debug(f"Failed to crawl {url}: {e}")
-                try:
-                    page.close()
-                except:
-                    pass
+            finally:
+                page.close() if page else None
 
         return list(self.visited)
 
