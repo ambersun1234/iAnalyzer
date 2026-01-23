@@ -27,15 +27,20 @@ class ImageChecker:
 
             images = page.query_selector_all("img")
             for index, img in enumerate(images):
+                width, height = self._check_image(img, page_url)
                 logger.debug(
                     f"Checking image",
                     extra={
                         "img_url": img.get_attribute("src"),
+                        "metadata": {
+                            "width": width,
+                            "height": height,
+                        },
                         "index": index + 1,
                         "total": len(images),
                     },
                 )
-                self._check_image(img, page_url)
+
         except Exception as e:
             fail = True
             logger.error(
@@ -46,7 +51,7 @@ class ImageChecker:
 
         return fail
 
-    def _check_image(self, img_element, page_url: str):
+    def _check_image(self, img_element, page_url: str) -> (int, int):
         try:
             img_url = img_element.get_attribute("src")
 
@@ -62,10 +67,21 @@ class ImageChecker:
                 )
                 return
 
-            width = img_element.get_attribute("width")
-            height = img_element.get_attribute("height")
+            dimensions = img_element.evaluate("""
+                (img) => {
+                    return {
+                        naturalWidth: img.naturalWidth,
+                        naturalHeight: img.naturalHeight,
+                        offsetWidth: img.offsetWidth,
+                        offsetHeight: img.offsetHeight
+                    };
+                }
+            """)
 
-            if width == 0 or height == 0:
+            width = dimensions.get("naturalWidth") or dimensions.get("offsetWidth")
+            height = dimensions.get("naturalHeight") or dimensions.get("offsetHeight")
+
+            if (width == 0 or width is None) or (height == 0 or height is None):
                 logger.error(
                     f"Image failed to load (size 0)",
                     extra={
@@ -75,6 +91,8 @@ class ImageChecker:
                     },
                 )
                 raise Exception("Image failed to load (size 0)")
+
+            return width, height
 
         except Exception as e:
             raise e
