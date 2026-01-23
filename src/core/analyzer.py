@@ -22,6 +22,7 @@ class ImageAnalyzer:
     def analyze(self) -> int:
         fail_count = 0
 
+        site_results = []
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(
@@ -55,10 +56,14 @@ class ImageAnalyzer:
                         )
                         continue
 
-                    fail_count += checker.check_page(page_url)
+                    page_result, page_fail_count = checker.check_page(page_url)
+                    fail_count += page_fail_count
+                    site_results.extend(page_result)
 
             finally:
                 context.close()
                 browser.close()
+
+        logger.info("Analyze finished.", extra={"results": site_results})
 
         return fail_count

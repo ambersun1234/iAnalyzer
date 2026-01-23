@@ -8,8 +8,10 @@ class ImageChecker:
         self.context = context
         self.ignore_prefixes = ignore_prefixes or []
 
-    def check_page(self, page_url: str) -> bool:
+    def check_page(self, page_url: str) -> (list, bool):
         fail = False
+
+        page_fail_results = []
         try:
             page = self.context.new_page()
             try:
@@ -46,10 +48,16 @@ class ImageChecker:
             logger.error(
                 f"Error checking page", extra={"page_url": page_url, "error": e}
             )
+            page_fail_results.append(
+                {
+                    "page_url": page_url,
+                    "image_url": img.get_attribute("src"),
+                }
+            )
         finally:
             page.close() if page else None
 
-        return fail
+        return page_fail_results, fail
 
     def _check_image(self, img_element, page_url: str) -> (int, int):
         try:
