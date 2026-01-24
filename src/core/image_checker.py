@@ -80,16 +80,14 @@ class ImageChecker:
                     return {
                         naturalWidth: img.naturalWidth,
                         naturalHeight: img.naturalHeight,
-                        offsetWidth: img.offsetWidth,
-                        offsetHeight: img.offsetHeight
                     };
                 }
             """)
 
-            width = dimensions.get("naturalWidth") or dimensions.get("offsetWidth")
-            height = dimensions.get("naturalHeight") or dimensions.get("offsetHeight")
+            width = dimensions.get("naturalWidth")
+            height = dimensions.get("naturalHeight")
 
-            if (width == 0 or width is None) or (height == 0 or height is None):
+            if width == 0 or height == 0:
                 logger.error(
                     f"Image failed to load (size 0)",
                     extra={
@@ -99,6 +97,16 @@ class ImageChecker:
                     },
                 )
                 raise Exception("Image failed to load (size 0)")
+
+            if width is None or height is None:
+                logger.error(
+                    f"Image failed to load (size None)",
+                    extra={
+                        "page_url": page_url,
+                        "img_url": img_url,
+                        "reason": "Image failed to load (size None)",
+                    },
+                )
 
             return width, height
 
