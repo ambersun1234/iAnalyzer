@@ -31,5 +31,5 @@ RUN uv run playwright install
 
 RUN chmod +x entrypoint.sh
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD []
