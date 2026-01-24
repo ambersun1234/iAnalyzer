@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Set Playwright browser path to a consistent location
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libnss3 \
@@ -27,7 +30,7 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 RUN pip install uv && uv sync
-RUN uv run playwright install
+RUN uv run python -m playwright install chromium
 
 RUN chmod +x /app/entrypoint.sh
 
