@@ -1,0 +1,21 @@
+name: 'iAnalyzer'
+description: 'Analyze and validate images on a website'
+branding:
+  icon: 'image'
+  color: 'blue'
+
+inputs:
+  domain:
+    description: 'Domain to analyze (e.g., https://example.com)'
+    required: true
+  ignore-prefix:
+    description: 'URL prefixes to ignore (comma-separated, e.g., https://example.com/tags,https://example.com/categories)'
+    required: false
+    default: ''
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.domain }}
+    - ${{ inputs.ignore-prefix }}

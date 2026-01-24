@@ -29,5 +29,7 @@ COPY . .
 RUN pip install uv && uv sync
 RUN uv run playwright install
 
-ENTRYPOINT ["uv", "run", "main.py"]
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
 CMD []
