@@ -27,7 +27,7 @@ class ImageChecker:
                 )
                 raise Exception(f"Failed to load page: {page_url}")
 
-            images = page.query_selector_all("img")
+            images = page.get_by_role("img").all()
             for index, img in enumerate(images):
                 width, height = self._check_image(img, page_url)
                 logger.debug(
@@ -66,7 +66,7 @@ class ImageChecker:
             box = img_element.bounding_box()
             if not box:
                 logger.error(
-                    f"No bounding box",
+                    f"No bounding box, element is not visible",
                     extra={
                         "page_url": page_url,
                         "img_url": img_url,
