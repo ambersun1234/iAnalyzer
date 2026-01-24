@@ -1,10 +1,13 @@
 #!/bin/sh
 set -e
 
+# Ensure we're in the correct working directory
+cd /app
+
 # Check if first argument starts with '--' (CLI-style arguments)
 if [ -n "$1" ] && [ "$(echo "$1" | cut -c1-2)" = "--" ]; then
     # Direct CLI execution: pass all arguments as-is to main.py
-    exec uv run main.py "$@"
+    exec uv run python main.py "$@"
 else
     # Docker/GitHub Actions execution: positional arguments
     # Domain is required (first argument)
@@ -29,5 +32,5 @@ else
     fi
 
     # Execute the main script with all arguments
-    exec uv run main.py $ARGS
+    exec uv run python main.py $ARGS
 fi
