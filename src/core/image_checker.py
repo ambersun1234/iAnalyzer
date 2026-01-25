@@ -30,7 +30,42 @@ class ImageChecker:
                 )
                 raise Exception(f"Failed to load page: {page_url}")
 
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.evaluate("""
+                async () => {
+                    const scrollToBottom = async () => {
+                        return new Promise((resolve) => {
+                            const startPosition = window.pageYOffset || document.documentElement.scrollTop;
+                            const targetPosition = document.body.scrollHeight;
+                            const distance = targetPosition - startPosition;
+                            const duration = Math.max(1000, distance * 0.5); // Minimum 1 second, scales with distance
+                            const startTime = performance.now();
+                            
+                            const easeInOutQuad = (t) => {
+                                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                            };
+                            
+                            const animateScroll = (currentTime) => {
+                                const elapsed = currentTime - startTime;
+                                const progress = Math.min(elapsed / duration, 1);
+                                const eased = easeInOutQuad(progress);
+                                const currentPosition = startPosition + (distance * eased);
+                                
+                                window.scrollTo(0, currentPosition);
+                                
+                                if (progress < 1) {
+                                    requestAnimationFrame(animateScroll);
+                                } else {
+                                    resolve();
+                                }
+                            };
+                            
+                            requestAnimationFrame(animateScroll);
+                        });
+                    };
+                    
+                    return await scrollToBottom();
+                }
+            """)
             page.wait_for_timeout(1000)
 
             images = page.locator("img").all()
