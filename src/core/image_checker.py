@@ -14,6 +14,9 @@ class ImageChecker:
         page_fail_results = []
         try:
             page = self.context.new_page()
+            cdp_session = page.context.new_cdp_session(page)
+            cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
+
             try:
                 response = page.goto(page_url, wait_until="load", timeout=90000)
             except Exception:
