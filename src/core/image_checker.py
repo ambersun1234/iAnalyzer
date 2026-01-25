@@ -27,6 +27,9 @@ class ImageChecker:
                 )
                 raise Exception(f"Failed to load page: {page_url}")
 
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(1000)
+
             images = page.locator("img").all()
             for index, img in enumerate(images):
                 width, height = self._check_image(img, page_url)
@@ -61,6 +64,7 @@ class ImageChecker:
 
     def _check_image(self, img_element: Locator, page_url: str) -> (int, int):
         try:
+            img_element.scroll_into_view_if_needed()
             img_url = img_element.get_attribute("src", timeout=0)
 
             box = img_element.bounding_box()
@@ -76,48 +80,67 @@ class ImageChecker:
                 return
 
             dimensions = img_element.evaluate("""
-                (img) => {
-                    return {
-                        width: img.width,
-                        height: img.height,
-                        naturalWidth: img.naturalWidth,
-                        naturalHeight: img.naturalHeight,
+                async (img) => {
+                    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+                    const checkDimensions = (el) => {
+                        const isSvg = el.currentSrc.toLowerCase().endsWith('.svg') || el.src.startsWith('data:image/svg+xml');
+                        const hasPixels = el.naturalWidth > 0 || (isSvg && el.getBoundingClientRect().width > 0);
+                        
+                        return {
+                            naturalWidth: el.naturalWidth,
+                            naturalHeight: el.naturalHeight,
+                            hasPixels: hasPixels,
+                            complete: el.complete,
+                            src: el.currentSrc || el.src
+                        };
                     };
+
+                    let res = checkDimensions(img);
+                    if (!img.complete) {
+                        await new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 5000); });
+                    }
+
+                    res = checkDimensions(img);
+                    if (!res.hasPixels && img.complete) {
+                        await delay(300); 
+                        res = checkDimensions(img);
+                    }
+
+                    return res;
                 }
             """)
 
-            width = dimensions.get("width")
-            height = dimensions.get("height")
-
             n_width = dimensions.get("naturalWidth")
             n_height = dimensions.get("naturalHeight")
+            complete = dimensions.get("complete")
 
-            if (width == 0 or height == 0) or (n_width == 0 or n_height == 0):
+            if not complete:
+                logger.error(
+                    f"Image failed to load (complete False)",
+                    extra={
+                        "page_url": page_url,
+                        "img_url": img_url,
+                        "reason": "Image failed to load (complete False)",
+                    },
+                )
+                raise Exception("Image failed to load (complete False)")
+
+            if n_width == 0 and n_height == 0:
                 logger.error(
                     f"Image failed to load (size 0)",
                     extra={
                         "page_url": page_url,
                         "img_url": img_url,
+                        "naturalWidth": n_width,
+                        "naturalHeight": n_height,
+                        "complete": complete,
                         "reason": "Image failed to load (size 0)",
                     },
                 )
                 raise Exception("Image failed to load (size 0)")
 
-            if width is None or height is None:
-                logger.error(
-                    f"Image failed to load (size None)",
-                    extra={
-                        "page_url": page_url,
-                        "img_url": img_url,
-                        "reason": "Image failed to load (size None)",
-                    },
-                )
-                raise Exception("Image failed to load (size None)")
-
-            w = width or n_width
-            h = height or n_height
-
-            return w, h
+            return n_width, n_height
 
         except Exception as e:
             raise e

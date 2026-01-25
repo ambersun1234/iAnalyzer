@@ -59,6 +59,10 @@ class ImageAnalyzer:
                     page_result, page_fail_count = checker.check_page(page_url)
                     fail_count += page_fail_count
                     site_results.extend(page_result)
+            except Exception as e:
+                logger.error(
+                    f"Error analyzing page", extra={"page_url": page_url, "error": e}
+                )
 
             finally:
                 context.close()
