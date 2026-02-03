@@ -13,6 +13,8 @@ class ImageChecker:
 
         page_fail_results = []
         try:
+            current_image = None
+
             page = self.context.new_page()
             cdp_session = page.context.new_cdp_session(page)
             cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
@@ -20,7 +22,7 @@ class ImageChecker:
             try:
                 response = page.goto(page_url, wait_until="load", timeout=90000)
             except Exception:
-                logger.debug(f"Timeout loading {page_url}, skipping")
+                logger.warning(f"Timeout loading {page_url}, skipping")
                 raise
 
             if not response or response.status != 200:
@@ -70,6 +72,7 @@ class ImageChecker:
 
             images = page.locator("img").all()
             for index, img in enumerate(images):
+                current_image = img
                 width, height = self._check_image(img, page_url)
                 logger.debug(
                     f"Checking image",
@@ -92,7 +95,11 @@ class ImageChecker:
             page_fail_results.append(
                 {
                     "page_url": page_url,
-                    "image_url": img.get_attribute("src"),
+                    "image_url": (
+                        "unknown"
+                        if current_image is None
+                        else current_image.get_attribute("src")
+                    ),
                 }
             )
         finally:
